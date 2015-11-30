@@ -1,0 +1,64 @@
+xddata:
+  image: xiocode/spring-xd
+  container_name: xddata
+  volumes:
+  - /opt/spring-xd-1.2.1.RELEASE/xd/config
+  - /opt/spring-xd-1.2.1.RELEASE/xd/custom-modules
+  - /opt/spring-xd-1.2.1.RELEASE/xd/data
+  - /data
+  - /opt/spring-xd-1.2.1.RELEASE/xd/modules:ro
+  command: "true"
+  user: springxd
+redis:
+  image: redis
+  container_name: redis
+  volumes_from:
+  - xddata
+zookeeper:
+  container_name: zookeeper
+  image: xiocode/spring-xd
+  working_dir: /opt/spring-xd/zookeeper/bin
+  command: ./zkServer.sh start-foreground
+  volumes_from:
+  - xddata
+hsqldb:
+  image: xiocode/spring-xd
+  container_name: "hsqldb"
+  command: hsqldb/bin/hsqldb-server
+  user: springxd
+rabbitmq:
+  container_name: rabbitmq
+  image: rabbitmq
+  ports:
+  - "15672:15672"
+xdadmin:
+  image: xiocode/spring-xd
+  container_name: xdadmin
+  command: xd/bin/xd-admin
+  links:
+  - "hsqldb"
+  - "zookeeper"
+  - "rabbitmq"
+  - "redis"
+  user: springxd
+  ports:
+  - "9393:9393"
+  env_file: springxd.env
+  volumes_from:
+  - xddata
+xdcontainer:
+  image: xiocode/spring-xd
+  command: xd/bin/xd-container
+  links:
+  - "hsqldb"
+  - "xdadmin"
+  - "zookeeper"
+  - "rabbitmq"
+  - "redis"
+  user: springxd
+  ports:
+  - "8080:8080"
+  - "8081:8081"
+  env_file: springxd.env
+  volumes_from:
+  - xddata
